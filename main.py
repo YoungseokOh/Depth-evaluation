@@ -36,7 +36,7 @@ def main():
     cv2.namedWindow('image')
     cv2.namedWindow('depth')
     cv2.setMouseCallback("image", mouse_control, data)
-    count = 0
+    depth_count = 0
     save_path = data.file_manager.save_path
     for folder in folder_names:
         exp_path = save_path + os.path.join('/', folder)
@@ -58,27 +58,27 @@ def main():
             cv2.imshow('depth', data.draw_depth)
             data.draw_image = img.copy()
             data.draw_depth = depth.copy()
+            data.ori_depth = depth.copy()
             k = cv2.waitKey(1)
             if k == 27 or data.file_manager.box_idx == len(meter_list):
                 data.file_manager.box_idx = 0  # esc를 누르면 종료
                 break
         count = 0
-        box_data = data.file_manager.box_data
-        depth_data = data.file_manager.depth_data
         for meter in meter_list:
             savetxt_name = exp_path + os.path.join('/', meter) + '.txt'
             depthtxt_name = exp_path + os.path.join('/', meter) + '_depth.txt'
             if not os.path.isfile(savetxt_name) or os.path.isfile(depthtxt_name):
                 p_f = open(savetxt_name, 'w')
-                for n in box_data[count]:
+                for n in data.file_manager.box_data[count]:
                     p_f.write(''.join(str(n)) + ' ')
                 p_f.close()
-                depth_list = depth_data[count]
+                depth_list = data.file_manager.depth_data[count]
                 df = pd.DataFrame(depth_list, columns=["depth"]).T
                 df.to_csv(depthtxt_name, index=None, header=None)
                 count += 1
             else:
                 break
+        data.file_manager.depth_data = []
         # print('done')
 
 

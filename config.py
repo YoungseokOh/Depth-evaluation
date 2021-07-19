@@ -14,8 +14,11 @@ class config:
         self.mouse_event = mouse_event()
         self.draw = draw()
         self.display = display()
-        self.draw_image = np.zeros((self.display.image_size[1].astype(np.uint32), self.display.image_size[0].astype(np.uint32), 3),dtype=np.uint8)
+        self.draw_image = np.zeros((self.display.image_size[1].astype(np.uint32), self.display.image_size[0].astype(np.uint32), 3),
+            dtype=np.uint8)
         self.draw_depth = np.zeros((self.display.image_size[1].astype(np.uint32), self.display.image_size[0].astype(np.uint32)),
+            dtype=np.float32)
+        self.ori_depth = np.zeros((self.display.image_size[1].astype(np.uint32), self.display.image_size[0].astype(np.uint32)),
             dtype=np.float32)
 
 
@@ -113,7 +116,7 @@ class draw(config):
             depth_temp = []
             for j in range(config.mouse_event.y1, config.mouse_event.cur_y):
                 for i in range(config.mouse_event.x1, config.mouse_event.cur_x):
-                    depth_temp.append(config.draw_depth[j][i])
+                    depth_temp.append(config.ori_depth[j][i])
             config.file_manager.depth_data.append(depth_temp)
             config.file_manager.box_idx += 1
             config.mouse_event.cur_x = config.mouse_event.cur_y = config.mouse_event.x1 = config.mouse_event.y1 = None
