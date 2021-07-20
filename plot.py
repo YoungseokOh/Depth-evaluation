@@ -4,8 +4,10 @@ import config
 import os
 import utils
 from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
 
 data = config.config()
+
 
 def boxplot(df_diff):
     df_mean = df_diff.T.mean()
@@ -14,6 +16,7 @@ def boxplot(df_diff):
     plt.xlabel('depth(m)')
     plt.ylabel('error(m)')
     plt.show()
+
 
 def main():
     gt_dist = data.distance.read_gt_distance(data.file_manager.exp_counts, data.file_manager.gt_distance_path)
@@ -41,10 +44,22 @@ def main():
             depth_name_list.append(meter)
     df_depth_diff = pd.DataFrame(depth_diff, depth_name_list)
     df_depth_reggresion = pd.DataFrame(depth_list, depth_name_list).T.melt().dropna(axis=0)
-
+    df_feature, poly_leg = utils.poly_feature(df_depth_reggresion['value'].values.reshape(-1, 1), 2)
+    lin_reg_2 = LinearRegression()
+    lin_reg_2.fit(df_feature, df_depth_reggresion['variable'].values)
+    # plt.scatter(df_depth_reggresion['value'].values, df_depth_reggresion['variable'].values)
+    plt.plot(df_depth_reggresion['value'].values,
+             lin_reg_2.predict(poly_leg.fit_transform(df_depth_reggresion['value'].values.reshape(-1, 1))),
+             color='blue')
+    df_depth_reggresion['value'] = lin_reg_2.predict(
+        poly_leg.fit_transform(df_depth_reggresion['value'].values.reshape(-1, 1)))
+    reg_depth_error = utils.melt_to_col(depth_name_list, df_depth_reggresion)
+    reg_depth_diff = utils.create_Dataframe(reg_depth_error, depth_name_list)
+    # Box plot
     boxplot(df_depth_diff)
-    print('done')
+    boxplot(reg_depth_diff)
 
+    print('done')
 
 
 if __name__ == "__main__":
