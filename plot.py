@@ -19,7 +19,13 @@ def boxplot(df_diff):
 
 
 def main():
-    gt_dist = data.distance.read_gt_distance(data.file_manager.exp_counts, data.file_manager.gt_distance_path)
+    # select category
+    #######
+    category = input("Select category [box, car, person] :")
+    #######
+    data.file_manager.path_category_update(category)
+    gt_dist = data.distance.read_gt_distance(utils.read_folder_list(data.file_manager.img_path),
+                                             data.file_manager.gt_distance_path)
     folder_names = gt_dist.keys()
     depth_list = []
     depth_diff = []
@@ -38,13 +44,13 @@ def main():
             depth_list.append(depth_temp)
             depth_diff_temp = []
             for depth in depth_temp:
-                diff_temp = (int(depth) / 35) - float(meter)
+                diff_temp = abs((int(depth) / 35) - float(meter))
                 depth_diff_temp.append(diff_temp)
             depth_diff.append(depth_diff_temp)
             depth_name_list.append(meter)
     df_depth_diff = pd.DataFrame(depth_diff, depth_name_list)
     df_depth_reggresion = pd.DataFrame(depth_list, depth_name_list).T.melt().dropna(axis=0)
-    df_feature, poly_leg = utils.poly_feature(df_depth_reggresion['value'].values.reshape(-1, 1), 2)
+    df_feature, poly_leg = utils.poly_feature(df_depth_reggresion['value'].values.reshape(-1, 1), 3)
     lin_reg_2 = LinearRegression()
     lin_reg_2.fit(df_feature, df_depth_reggresion['variable'].values)
     # plt.scatter(df_depth_reggresion['value'].values, df_depth_reggresion['variable'].values)
@@ -56,7 +62,7 @@ def main():
     reg_depth_error = utils.melt_to_col(depth_name_list, df_depth_reggresion)
     reg_depth_diff = utils.create_Dataframe(reg_depth_error, depth_name_list)
     # Box plot
-    boxplot(df_depth_diff)
+    # boxplot(df_depth_diff)
     boxplot(reg_depth_diff)
 
     print('done')

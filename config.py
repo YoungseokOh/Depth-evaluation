@@ -44,23 +44,28 @@ class file_manager(config):
     def __init__(self):
         img_file = ""
         depth_file = ""
-        img_folder = '/img'
-        depth_folder = '/depth'
-        save_folder = '/pixel_coord'
-        gt_distance_txt = '/gt_distance.txt'
+        self.gt_distance_path = ""
+        self.img_folder = '/img'
+        self.depth_folder = '/depth'
+        self.save_folder = '/pixel_coord'
         self.ori_path = 'Y:/monodepth_results/front_results/_evaluation/real_meter'
-        self.img_path = self.ori_path + img_folder
-        self.depth_path = self.ori_path + depth_folder
-        self.save_path = self.ori_path + save_folder
-        self.gt_distance_path = self.ori_path + gt_distance_txt
-        self.exp_counts = utils.read_folder_list(self.img_path)
+        self.img_path = self.ori_path + self.img_folder
+        self.depth_path = self.ori_path + self.depth_folder
+        self.save_path = self.ori_path + self.save_folder
         self.meter_count = 0
         self.depth_len = 0
 
 
         self.box_idx = 0
-        self.box_data = np.zeros((5,4), dtype = np.int32)# frame 넘길 때마다 박스데이터 초기화
-        self.depth_data = []  # frame 넘길 때마다 박스데이터 초기화
+        self.box_data = np.zeros((6,4), dtype = np.int32)# frame 넘길 때마다 박스데이터 초기화
+        self.depth_data = [] # frame 넘길 때마다 박스데이터 초기화
+        self.bottom_line_data = []
+
+    def path_category_update(self, category):
+        self.img_path = utils.paste_path(self.img_path, category)
+        self.depth_path = utils.paste_path(self.depth_path, category)
+        self.save_path = utils.paste_path(self.save_path, category)
+        self.gt_distance_path = os.path.join('/', self.ori_path, utils.search_txt_file(self.ori_path, category))
 
 
 class draw(config):
@@ -75,7 +80,6 @@ class draw(config):
         self.draw_move = draw.draw_move(self, config)
         self.draw_up = draw.draw_up(self, config)
 
-
     def draw_click(self, config):
         if config.mouse_event.mouse_flag == MouseFlag.MOUSE_LBUTTONDOWN:
             # print(config.mouse_event.click)
@@ -86,7 +90,6 @@ class draw(config):
             return None
             print("사각형의 왼쪽위 설정 : (" + str(config.mouse_event.x1) + ", " + str(config.mouse_event.y1) + ")")
 
-
     def draw_move(self, config):
         if config.mouse_event.click == True and config.mouse_event.mouse_flag == MouseFlag.MOUSE_MOVE:
                 cv2.rectangle(config.draw_image, (config.mouse_event.x1,config.mouse_event.y1),
@@ -96,14 +99,14 @@ class draw(config):
                 # print("(" + str(config.mouse_event.x1) + ", " + str(config.mouse_event.y1) + "), (" +
                 #       str(config.mouse_event.cur_x) + ", " + str(config.mouse_event.cur_y) + ")")
 
-
     def draw_up(self, config):
         if config.mouse_event.mouse_flag == MouseFlag.MOUSE_LBUTTONUP and config.mouse_event.x1 is not None:
             config.mouse_event.mouse_flag = MouseFlag.MOUSE_NOTHING
             cv2.rectangle(config.draw_image, (config.mouse_event.x1, config.mouse_event.y1),
-                          (config.mouse_event.cur_x, config.mouse_event.cur_y), (100, 0, 0), 1)
+                          (config.mouse_event.cur_x, config.mouse_event.cur_y), (100, 255, 0), 1)
             cv2.rectangle(config.draw_depth, (config.mouse_event.x1, config.mouse_event.y1),
-                          (config.mouse_event.cur_x, config.mouse_event.cur_y), (255, 0, 0), 1)
+                          (config.mouse_event.cur_x, config.mouse_event.cur_y), (255, 255, 0), 1)
+
             # image
             config.file_manager.box_data[config.file_manager.box_idx][0] = config.mouse_event.cur_x
             config.file_manager.box_data[config.file_manager.box_idx][1] = config.mouse_event.cur_y
@@ -114,12 +117,19 @@ class draw(config):
             y_diff = config.mouse_event.cur_y - config.mouse_event.y1
             config.file_manager.depth_len = x_diff * y_diff
             depth_temp = []
+            depth_bottom_temp = []
+            # rect depth extract
             for j in range(config.mouse_event.y1, config.mouse_event.cur_y):
                 for i in range(config.mouse_event.x1, config.mouse_event.cur_x):
                     depth_temp.append(config.ori_depth[j][i])
+            # bottom line depth extract
+            print(y_diff)
+            for line in range(config.mouse_event.x1, config.mouse_event.cur_x):
+                    depth_bottom_temp.append(config.ori_depth[config.mouse_event.cur_y][line])
             config.file_manager.depth_data.append(depth_temp)
-            config.file_manager.box_idx += 1
+            config.file_manager.bottom_line_data.append(depth_bottom_temp)
             config.mouse_event.cur_x = config.mouse_event.cur_y = config.mouse_event.x1 = config.mouse_event.y1 = None
+            config.file_manager.box_idx += 1
 
 
 class display(config):
@@ -150,4 +160,6 @@ class display(config):
                 y1 = config.file_manager.box_data[x][3].copy()
                 cv2.rectangle(config.draw_image, (x1, y1), (cur_x, cur_y), (100, 0, 0), 1)
                 cv2.rectangle(config.draw_depth, (x1, y1), (cur_x, cur_y), (100, 0, 255), 1)
+                cv2.line(config.draw_image, (x1, cur_y), (cur_x, cur_y), (255, 255, 255), 1)
+                # cv2.line(config.draw_depth, (x1, cur_y), (cur_x, cur_y), (100, 255, 255), 1)
 

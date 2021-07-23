@@ -27,10 +27,15 @@ def mouse_control(event, x, y, flags, data):
         data.mouse_event.mouse_flag = MouseFlag.MOUSE_LBUTTONUP
 
 
-
 def main():
     global data
-    gt_dist = data.distance.read_gt_distance(data.file_manager.exp_counts, data.file_manager.gt_distance_path)
+    # select category
+    #######
+    category = input("Select category [box, car, person] :")
+    #######
+    data.file_manager.path_category_update(category)
+    gt_dist = data.distance.read_gt_distance(utils.read_folder_list(data.file_manager.img_path),
+                                             data.file_manager.gt_distance_path)
     folder_names = gt_dist.keys()
     # folder check
     cv2.namedWindow('image')
@@ -67,14 +72,18 @@ def main():
         for meter in meter_list:
             savetxt_name = exp_path + os.path.join('/', meter) + '.txt'
             depthtxt_name = exp_path + os.path.join('/', meter) + '_depth.txt'
+            bottom_depthtxt_name = exp_path + os.path.join('/', meter) + '_bottom_depth.txt'
             if not os.path.isfile(savetxt_name) or os.path.isfile(depthtxt_name):
                 p_f = open(savetxt_name, 'w')
                 for n in data.file_manager.box_data[count]:
                     p_f.write(''.join(str(n)) + ' ')
                 p_f.close()
                 depth_list = data.file_manager.depth_data[count]
+                bottom_depth_list = data.file_manager.bottom_line_data[count]
                 df = pd.DataFrame(depth_list, columns=["depth"]).T
+                df_bottom = pd.DataFrame(bottom_depth_list, columns=["depth"]).T
                 df.to_csv(depthtxt_name, index=None, header=None)
+                df_bottom.to_csv(bottom_depthtxt_name, index=None, header=None)
                 count += 1
             else:
                 break

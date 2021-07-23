@@ -57,5 +57,19 @@ def melt_to_col(depth_name_list, df_depth_reggresion):
         reg_depth_error.append(reg_depth_error_temp)
     return reg_depth_error
 
+
 def create_Dataframe(depth, name_list):
     return pd.DataFrame(depth, name_list)
+
+
+def paste_path(main_path, paste_path):
+    return os.path.join('/', main_path, paste_path)
+
+
+def search_txt_file(path, category):
+    file_list = read_folder_list(path)
+    for file in file_list:
+        filename, ext = os.path.splitext(file)
+        if ext == '.txt' and filename[-len(category):] == category:
+            return file
+
