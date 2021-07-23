@@ -80,8 +80,10 @@ def main():
                 p_f.close()
                 depth_list = data.file_manager.depth_data[count]
                 bottom_depth_list = data.file_manager.bottom_line_data[count]
+                # box depth save
                 df = pd.DataFrame(depth_list, columns=["depth"]).T
                 df_bottom = pd.DataFrame(bottom_depth_list, columns=["depth"]).T
+                # bottom line save
                 df.to_csv(depthtxt_name, index=None, header=None)
                 df_bottom.to_csv(bottom_depthtxt_name, index=None, header=None)
                 count += 1

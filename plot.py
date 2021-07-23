@@ -28,6 +28,7 @@ def main():
                                              data.file_manager.gt_distance_path)
     folder_names = gt_dist.keys()
     depth_list = []
+    bottom_depth_list = []
     depth_diff = []
     depth_name_list = []
     scale_num = 35
@@ -36,12 +37,17 @@ def main():
         if utils.check_folder(exp_path):
             meter_list = gt_dist[folder].split(" ")
         depth_temp = []
+        bottom_depth_temp = []
         depth_diff_temp = []
         for meter in meter_list:
             depthtxt_name = exp_path + os.path.join('/', meter) + '_depth.txt'
+            bottom_depthtxt_name = exp_path + os.path.join('/', meter) + '_bottom_depth.txt'
             depth_temp = pd.read_csv(depthtxt_name, delimiter=',').T
+            bottom_depth_temp = pd.read_csv(bottom_depthtxt_name, delimiter=',').T
             depth_temp = list(map(float, depth_temp.index.values))
+            bottom_depth_temp = list(map(float, bottom_depth_temp.index.values))
             depth_list.append(depth_temp)
+            bottom_depth_list.append(bottom_depth_temp)
             depth_diff_temp = []
             for depth in depth_temp:
                 diff_temp = abs((int(depth) / 35) - float(meter))
@@ -61,9 +67,24 @@ def main():
         poly_leg.fit_transform(df_depth_reggresion['value'].values.reshape(-1, 1)))
     reg_depth_error = utils.melt_to_col(depth_name_list, df_depth_reggresion)
     reg_depth_diff = utils.create_Dataframe(reg_depth_error, depth_name_list)
+
+    # bottom depth reggression
+    bottom_df_depth_reggresion = pd.DataFrame(bottom_depth_list, depth_name_list).T.melt().dropna(axis=0)
+    bottom_df_feature, bottom_poly_leg = utils.poly_feature(bottom_df_depth_reggresion['value'].values.reshape(-1, 1), 3)
+    lin_reg_bottom = LinearRegression()
+    lin_reg_bottom.fit(bottom_df_feature, bottom_df_depth_reggresion['variable'].values)
+    # plt.scatter(df_depth_reggresion['value'].values, df_depth_reggresion['variable'].values)
+    plt.plot(bottom_df_depth_reggresion['value'].values,
+             lin_reg_bottom.predict(bottom_poly_leg.fit_transform(bottom_df_depth_reggresion['value'].values.reshape(-1, 1))),
+             color='blue')
+    bottom_df_depth_reggresion['value'] = lin_reg_bottom.predict(
+        bottom_poly_leg.fit_transform(bottom_df_depth_reggresion['value'].values.reshape(-1, 1)))
+    bottom_reg_depth_error = utils.melt_to_col(depth_name_list, bottom_df_depth_reggresion)
+    bottom_reg_depth_diff = utils.create_Dataframe(bottom_reg_depth_error, depth_name_list)
     # Box plot
     # boxplot(df_depth_diff)
     boxplot(reg_depth_diff)
+    boxplot(bottom_reg_depth_diff)
 
     print('done')
 
