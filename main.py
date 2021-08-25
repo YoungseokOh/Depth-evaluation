@@ -53,7 +53,7 @@ def main():
         # Depth
         data.file_manager.depth_file = utils.rand_img(data.file_manager.depth_path + os.path.join('/', folder))
         depth = cv2.imread(data.file_manager.depth_path + os.path.join('/', folder, data.file_manager.depth_file), cv2.CV_16U)
-        img = cv2.resize(img, (1280, 384))
+        img = cv2.resize(img, (640, 192))
         # data.draw_image = img.copy()
         # cv2.namedWindow('image')
         while(True):
