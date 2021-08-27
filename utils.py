@@ -5,6 +5,7 @@ import pandas as pd
 from sklearn.preprocessing import PolynomialFeatures
 from scipy.stats import mode
 
+
 def readlines(filename):
     """Read all the lines in a text file and return as a list
     """
@@ -59,9 +60,12 @@ def melt_to_col(depth_name_list, df_depth_reggresion):
         for index in index_list:
             if str(variable) == str(df_depth_reggresion['variable'][index]):
                 reg_depth_error_temp.append(
-                    abs(float(df_depth_reggresion['regression'][index]) - float(df_depth_reggresion['variable'][index])))
+                    abs(float(df_depth_reggresion['regression'][index]) - float(
+                        df_depth_reggresion['variable'][index])))
                 reg_depth_error_rate_temp.append((
-                    abs(float(df_depth_reggresion['regression'][index]) - float(df_depth_reggresion['variable'][index])) / float(df_depth_reggresion['variable'][index])) * 100)
+                                                         abs(float(df_depth_reggresion['regression'][index]) - float(
+                                                             df_depth_reggresion['variable'][index])) / float(
+                                                     df_depth_reggresion['variable'][index])) * 100)
                 reg_depth_diff_temp.append(abs(float(df_depth_reggresion['regression'][index]) - float(variable)))
         reg_depth_error.append(reg_depth_error_temp)
         reg_depth_error_rate.append(reg_depth_error_rate_temp)
@@ -70,7 +74,7 @@ def melt_to_col(depth_name_list, df_depth_reggresion):
     return reg_depth_error, reg_depth_error_rate, reg_depth_error_rate_avg, reg_depth
 
 
-def create_Dataframe(depth, name_list):
+def create_dataframe(depth, name_list):
     return pd.DataFrame(depth, name_list)
 
 
@@ -113,3 +117,34 @@ def df_to_mode_list(depth_list):
         mode_list.append(temp_depth_list[0][0])
     return mode_list
 
+
+def load_depth_list(path, gt_dist, folder_name_list, scale_num=30):
+    depth_list = []
+    bottom_depth_list = []
+    depth_diff = []
+    depth_name_list = []
+    for folder in folder_name_list:
+        exp_path = path + os.path.join('/', folder)
+        if check_folder(exp_path):
+            meter_list = gt_dist[folder].split(" ")
+        depth_temp = []
+        bottom_depth_temp = []
+        depth_diff_temp = []
+        for meter in meter_list:
+            depthtxt_name = exp_path + os.path.join('/', meter) + '_depth.txt'
+            bottom_depthtxt_name = exp_path + os.path.join('/', meter) + '_bottom_depth.txt'
+            depth_temp = pd.read_csv(depthtxt_name, delimiter=',').T
+            bottom_depth_temp = pd.read_csv(bottom_depthtxt_name, delimiter=',').T
+            depth_temp = list(map(float, depth_temp.index.values))
+            bottom_depth_temp = list(map(float, bottom_depth_temp.index.values))
+            depth_list.append(depth_temp)
+            bottom_depth_list.append(bottom_depth_temp)
+            depth_diff_temp = []
+            for depth in depth_temp:
+                diff_temp = abs((int(depth) / scale_num) - float(meter))
+                depth_diff_temp.append(diff_temp)
+            depth_diff.append(depth_diff_temp)
+            depth_name_list.append(meter)
+    depth_name_list = list(map(int, depth_name_list))
+    # df_depth_diff = pd.DataFrame(depth_diff, depth_name_list)
+    return depth_list, depth_name_list, depth_diff
