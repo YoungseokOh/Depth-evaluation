@@ -2,8 +2,15 @@
 import os, random
 import numpy as np
 import pandas as pd
+import cv2
 from sklearn.preprocessing import PolynomialFeatures
 from scipy.stats import mode
+
+
+def write_coef(path, coef, degree):
+    save_path = path + os.path.join('/degree_{}_coef'.format(degree))
+    if not os.path.isfile(save_path):
+        np.save(save_path, coef)
 
 
 def readlines(filename):
@@ -38,7 +45,19 @@ def rand_img(path):
 
 
 def img_read(path):
-    return 0
+    return cv2.imread(path, 0)
+
+
+def img_resize(img, width, height):
+    return cv2.resize(img, [width, height])
+
+
+def cal_distance(depth, coef):
+    coef_len = len(coef)
+    feat_depth = []
+    for i in range(coef_len):
+        feat_depth.append(pow(depth, i))
+    return round(sum(feat_depth * coef), 2)
 
 
 def poly_feature(df_feature, degree=2):
@@ -90,6 +109,14 @@ def search_txt_file(path, category):
             return file
 
 
+def search_npy_file(path):
+    file_list = read_folder_list(path)
+    for file in file_list:
+        filename, ext = os.path.splitext(file)
+        if ext == '.npy':
+            return file
+
+
 def df_to_avg_list(depth_list):
     avg_list = []
     for depth in range(len(depth_list)):
@@ -108,14 +135,36 @@ def df_to_error_rate_list(depth_list):
     return avg_list
 
 
-def df_to_mode_list(depth_list):
+def df_option_to_list(depth_list, option='mode'):
     mode_list = []
     for depth in range(len(depth_list)):
         temp_depth_list = list(depth_list.iloc[depth].values)
         temp_depth_list = [x for x in temp_depth_list if x == x]
-        temp_depth_list = mode(temp_depth_list)
-        mode_list.append(temp_depth_list[0][0])
+        if option == 'mode':
+            temp_depth_list = mode(temp_depth_list)
+            mode_list.append(temp_depth_list[0][0])
+        elif option == 'avg':
+            temp_depth_list = np.average(temp_depth_list)
+            mode_list.append(round(temp_depth_list, 0))
+        elif option == 'median':
+            temp_depth_list = np.median(temp_depth_list)
+            mode_list.append(round(temp_depth_list, 0))
     return mode_list
+
+
+def box_coord_to_list(box_str_list):
+    global box_string
+    if box_str_list:
+        box_string = box_str_list[len(box_str_list)-1]
+    coord_temp_list = []
+    temp_c = ''
+    for c in box_string:
+        if c != ' ':
+            temp_c = temp_c + c
+        else:
+            coord_temp_list.append(int(temp_c))
+            temp_c = ''
+    return coord_temp_list
 
 
 def load_depth_list(path, gt_dist, folder_name_list, scale_num=30):
@@ -123,21 +172,32 @@ def load_depth_list(path, gt_dist, folder_name_list, scale_num=30):
     bottom_depth_list = []
     depth_diff = []
     depth_name_list = []
+    box_coord = []
     for folder in folder_name_list:
         exp_path = path + os.path.join('/', folder)
         if check_folder(exp_path):
             meter_list = gt_dist[folder].split(" ")
-        depth_temp = []
-        bottom_depth_temp = []
-        depth_diff_temp = []
         for meter in meter_list:
+            # txt
             depthtxt_name = exp_path + os.path.join('/', meter) + '_depth.txt'
             bottom_depthtxt_name = exp_path + os.path.join('/', meter) + '_bottom_depth.txt'
+            depth_box_coord = exp_path + os.path.join('/', meter) + '.txt'
+            # read_csv
             depth_temp = pd.read_csv(depthtxt_name, delimiter=',').T
             bottom_depth_temp = pd.read_csv(bottom_depthtxt_name, delimiter=',').T
+            depth_box_coord_temp = pd.read_csv(depth_box_coord, delimiter=',').T
+            # list map
             depth_temp = list(map(float, depth_temp.index.values))
             bottom_depth_temp = list(map(float, bottom_depth_temp.index.values))
+            depth_box_coord_temp = list(map(str, depth_box_coord_temp.index.values))
+            depth_box_coord_temp = box_coord_to_list(depth_box_coord_temp)
+            coord_temp = []
+            for y in range(depth_box_coord_temp[3], depth_box_coord_temp[1]):
+                for x in range(depth_box_coord_temp[2], depth_box_coord_temp[0]):
+                    coord_temp.append((y, x))
+            # append
             depth_list.append(depth_temp)
+            box_coord.append(coord_temp)
             bottom_depth_list.append(bottom_depth_temp)
             depth_diff_temp = []
             for depth in depth_temp:
@@ -147,4 +207,4 @@ def load_depth_list(path, gt_dist, folder_name_list, scale_num=30):
             depth_name_list.append(meter)
     depth_name_list = list(map(int, depth_name_list))
     # df_depth_diff = pd.DataFrame(depth_diff, depth_name_list)
-    return depth_list, depth_name_list, depth_diff
+    return depth_list, bottom_depth_list, depth_name_list, depth_diff, box_coord

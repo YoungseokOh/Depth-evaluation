@@ -18,7 +18,6 @@ def mouse_control(event, x, y, flags, data):
         data.mouse_event.click = True
         data.mouse_event.mouse_flag = MouseFlag.MOUSE_LBUTTONDOWN
 
-
     if event == cv2.EVENT_MOUSEMOVE:
         data.mouse_event.mouse_flag = MouseFlag.MOUSE_MOVE
 
@@ -31,7 +30,7 @@ def main():
     global data
     # select category
     #######
-    category = input("Select category [box, car, person] :")
+    category = input("Select category [box, car, road, person] :")
     #######
     data.file_manager.path_category_update(category)
     gt_dist = data.distance.read_gt_distance(utils.read_folder_list(data.file_manager.img_path),
@@ -90,6 +89,7 @@ def main():
             else:
                 break
         data.file_manager.depth_data = []
+        data.file_manager.bottom_line_data = []
         # print('done')
 
 
