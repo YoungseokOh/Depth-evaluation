@@ -45,6 +45,7 @@ class mouse_event(config):
 
 class file_manager(config):
     def __init__(self):
+        # paths
         img_file = ""
         depth_file = ""
         self.gt_distance_path = ""
@@ -52,15 +53,19 @@ class file_manager(config):
         self.depth_folder = '/depth'
         self.seg_folder = '/seg'
         self.save_folder = '/pixel_coord'
+        self.regression_data = './regression_data'
         self.ori_path = 'Y:/monodepth_results/front_results/_evaluation/real_meter'
         self.img_path = self.ori_path + self.img_folder
         self.depth_path = self.ori_path + self.depth_folder
         self.save_path = self.ori_path + self.save_folder
         self.seg_path = self.ori_path + self.seg_folder
+        # settings
         self.meter_count = 0
         self.depth_len = 0
         self.box_idx = 0
         self.reg_coef = 0
+        self.scale_num = 80
+        self.degree_num = 3
         self.box_data = np.zeros((6,4), dtype = np.int32)# frame 넘길 때마다 박스데이터 초기화
         self.depth_data = [] # frame 넘길 때마다 박스데이터 초기화
         self.bottom_line_data = []
@@ -131,6 +136,7 @@ class draw(config):
         if config.mouse_event.click == True and config.mouse_event.mouse_flag == MouseFlag.MOUSE_MOVE:
                 cv2.rectangle(config.draw_image, (config.mouse_event.x1,config.mouse_event.y1),
                               (config.mouse_event.cur_x,config.mouse_event.cur_y),(255,0,0),1)
+                cv2.line(config.draw_image, (0, config.mouse_event.cur_y), (640, config.mouse_event.cur_y), (255, 255, 255), 1)
                 cv2.rectangle(config.draw_depth, (config.mouse_event.x1,config.mouse_event.y1),
                               (config.mouse_event.cur_x,config.mouse_event.cur_y),(255,0,0),1)
                 # print("(" + str(config.mouse_event.x1) + ", " + str(config.mouse_event.y1) + "), (" +

@@ -11,6 +11,7 @@ from sklearn.linear_model import RANSACRegressor
 
 data = config.config()
 
+
 def cal_error_regression(depth_name_list, df_regression):
     reg_depth_error, reg_depth_error_rate, reg_depth_error_rate_avg, reg_depth = utils.melt_to_col(depth_name_list,
                                                                                                    df_regression)
@@ -44,7 +45,7 @@ def boxplot(df_diff, df_rate):
     plt.ylabel('error(m)')
     plt.grid(True)
     plt.title('average error rate : {}%'.format(round(float(sum(df_rate) / len(df_rate)), 2)))
-    # plt.show()
+    plt.show()
 
 
 def main():
@@ -53,71 +54,86 @@ def main():
     # category = input("Select category [box, car, road, person] :")
     category = 'road'
     #######
+    if not utils.check_exist(data.file_manager.regression_data + os.path.join('/', category)):
+        utils.make_folder(data.file_manager.regression_data + os.path.join('/', category))
     data.file_manager.path_category_update(category)
+
     gt_dist = data.distance.read_gt_distance(utils.read_folder_list(data.file_manager.img_path),
                                              data.file_manager.gt_distance_path)
     folder_names = gt_dist.keys()
-    scale_num = 27
-    depth_list, bottom_depth_list, depth_name_list, depth_diff, box_coord = utils.load_depth_list(data.file_manager.save_path,
-                                                                                                  gt_dist, folder_names,
-                                                                                                      scale_num)
+    scale = data.file_manager.scale_num
+    degree = data.file_manager.degree_num
+    depth_list, bottom_depth_list, depth_name_list, depth_diff, box_coord = utils.load_depth_list(
+        data.file_manager.save_path,
+        gt_dist, folder_names,
+        scale)
 
-    #-_-# original #-_-#
-    # df_depth_regression = set_regression(depth_list, depth_name_list, degree=1)
-    # df_reg_diff_ori, df_error_rate_ori = cal_error_regression(depth_name_list, df_depth_regression)
-    # plt.scatter(df_depth_regression['variable'].values, df_depth_regression['value'].values, c="orange", alpha=0.5)
-    # boxplot(df_reg_diff_ori, df_error_rate_ori)
-    # plt.show()
+    # -_-# original #-_-#
+    df_depth_regression = set_regression(depth_list, depth_name_list, degree=degree)
+    df_reg_diff_ori, df_error_rate_ori = cal_error_regression(depth_name_list, df_depth_regression)
+    plt.scatter(df_depth_regression['variable'].values, df_depth_regression['value'].values, c="orange", alpha=0.5)
+    boxplot(df_reg_diff_ori, df_error_rate_ori)
+    df_depth_regression.to_csv(
+        data.file_manager.regression_data + os.path.join('/', category) +
+        os.path.join('/', 'regression_original_{}.csv'.format(degree)))
+    plt.show()
 
-    #-_-# mode #-_-#
-    # df_depth_mode_list = utils.df_option_to_list(utils.create_dataframe(depth_list, depth_name_list))
-    # df_depth_mode_regression = set_regression(df_depth_mode_list, depth_name_list)
-    # df_reg_diff_mode, df_error_rate_mode = cal_error_regression(depth_name_list, df_depth_mode_regression)
-    # plt.scatter(df_depth_mode_regression['variable'].values, df_depth_mode_regression['value'].values)
-    # boxplot(df_reg_diff_mode, df_error_rate_mode)
+    # -_-# mode #-_-#
+    df_depth_mode_list = utils.df_option_to_list(utils.create_dataframe(depth_list, depth_name_list))
+    df_depth_mode_regression = set_regression(df_depth_mode_list, depth_name_list)
+    df_reg_diff_mode, df_error_rate_mode = cal_error_regression(depth_name_list, df_depth_mode_regression)
+    plt.scatter(df_depth_mode_regression['variable'].values, df_depth_mode_regression['value'].values)
+    df_depth_mode_regression.to_csv(
+        data.file_manager.regression_data + os.path.join('/', category) +
+        os.path.join('/', 'regression_mode_{}.csv'.format(degree)))
+    boxplot(df_reg_diff_mode, df_error_rate_mode)
 
-    #-_-# bottom_line #-_-#
+    # -_-# bottom_line #-_-#
     df_depth_bottom_list = utils.df_option_to_list(utils.create_dataframe(bottom_depth_list, depth_name_list))
     df_depth_bottom_regression = set_regression(bottom_depth_list, depth_name_list)
     df_reg_diff_mode, df_error_rate_mode = cal_error_regression(depth_name_list, df_depth_bottom_regression)
-    # plt.scatter(df_depth_bottom_regression['variable'].values, df_depth_bottom_regression['value'].values)
-    # boxplot(df_reg_diff_mode, df_error_rate_mode)
+    plt.scatter(df_depth_bottom_regression['variable'].values, df_depth_bottom_regression['value'].values)
+    df_depth_bottom_regression.to_csv(
+        data.file_manager.regression_data + os.path.join('/', category) +
+        os.path.join('/', 'regression_bottom_line_{}.csv'.format(degree)))
+    boxplot(df_reg_diff_mode, df_error_rate_mode)
 
-    #-_-# option plot #-_-#
-    # df_depth_mode_list = utils.df_option_to_list(utils.create_dataframe(bottom_depth_list, depth_name_list))
-    # df_depth_avg_list = utils.df_option_to_list(utils.create_dataframe(bottom_depth_list, depth_name_list), 'avg')
-    # df_depth_median_list = utils.df_option_to_list(utils.create_dataframe(bottom_depth_list, depth_name_list), 'median')
-    # df_depth_mode_regression = set_regression(df_depth_mode_list, depth_name_list, degree=3)
-    # df_depth_avg_regression = set_regression(df_depth_avg_list, depth_name_list, degree=3)
-    # df_depth_median_regression = set_regression(df_depth_median_list, depth_name_list, degree=3)
-    # plt.scatter(df_depth_bottom_regression['variable'].values, df_depth_bottom_regression['value'].values, c="orange", alpha=0.5)
-    # plt.plot(df_depth_mode_regression['variable'].values, df_depth_mode_regression['value'].values, 'o',
-    #          linestyle='dashed',  linewidth=2, markersize=6,  alpha=.8)
-    # plt.plot(df_depth_avg_regression['variable'].values, df_depth_avg_regression['value'].values, 'o',
-    #          linestyle='dashed',  linewidth=2, markersize=6,  alpha=.8, c="red")
-    # plt.plot(df_depth_median_regression['variable'].values, df_depth_median_regression['value'].values, 'o',
-    #          linestyle='dashed',  linewidth=2, markersize=6,  alpha=.8, c="green")
-    # plt.legend(['mode', 'avg', 'median'])
-    # plt.grid(True)
-    # plt.xticks(depth_name_list)
-    # plt.xlabel('depth(m)')
-    # plt.ylabel('value')
-    # plt.show()
-    # df_reg_diff_mode, df_error_rate_mode = cal_error_regression(depth_name_list, df_depth_mode_regression)
-    # df_reg_diff_avg, df_error_rate_avg = cal_error_regression(depth_name_list, df_depth_avg_regression)
-    # df_reg_diff_median, df_error_rate_median = cal_error_regression(depth_name_list, df_depth_median_regression)
-    # boxplot(df_reg_diff_mode, df_error_rate_mode)
-    # boxplot(df_reg_diff_avg, df_error_rate_avg)
-    # boxplot(df_reg_diff_median, df_error_rate_median)
+    # -_-# option plot #-_-#
+    df_depth_mode_list = utils.df_option_to_list(utils.create_dataframe(bottom_depth_list, depth_name_list))
+    df_depth_avg_list = utils.df_option_to_list(utils.create_dataframe(bottom_depth_list, depth_name_list), 'avg')
+    df_depth_median_list = utils.df_option_to_list(utils.create_dataframe(bottom_depth_list, depth_name_list), 'median')
+    df_depth_mode_regression = set_regression(df_depth_mode_list, depth_name_list, degree=degree)
+    df_depth_avg_regression = set_regression(df_depth_avg_list, depth_name_list, degree=degree)
+    df_depth_median_regression = set_regression(df_depth_median_list, depth_name_list, degree=degree)
+    plt.scatter(df_depth_bottom_regression['variable'].values, df_depth_bottom_regression['value'].values, c="orange",
+                alpha=0.5)
+    plt.plot(df_depth_mode_regression['variable'].values, df_depth_mode_regression['value'].values, 'o',
+             linestyle='dashed', linewidth=2, markersize=6, alpha=.8)
+    plt.plot(df_depth_avg_regression['variable'].values, df_depth_avg_regression['value'].values, 'o',
+             linestyle='dashed', linewidth=2, markersize=6, alpha=.8, c="red")
+    plt.plot(df_depth_median_regression['variable'].values, df_depth_median_regression['value'].values, 'o',
+             linestyle='dashed', linewidth=2, markersize=6, alpha=.8, c="green")
+    plt.legend(['mode', 'avg', 'median'])
+    plt.grid(True)
+    plt.xticks(depth_name_list)
+    plt.xlabel('depth(m)')
+    plt.ylabel('value')
+    plt.show()
+    df_reg_diff_mode, df_error_rate_mode = cal_error_regression(depth_name_list, df_depth_mode_regression)
+    df_reg_diff_avg, df_error_rate_avg = cal_error_regression(depth_name_list, df_depth_avg_regression)
+    df_reg_diff_median, df_error_rate_median = cal_error_regression(depth_name_list, df_depth_median_regression)
+    boxplot(df_reg_diff_mode, df_error_rate_mode)
+    boxplot(df_reg_diff_avg, df_error_rate_avg)
+    boxplot(df_reg_diff_median, df_error_rate_median)
 
-    #-_-# scaled #-_-#
+    # -_-# scaled #-_-#
     # df_scaled_depth_reggresion = pd.DataFrame(depth_diff, depth_name_list).T.melt().dropna(axis=0)
     # plt.scatter(df_scaled_depth_reggresion['variable'].values, df_scaled_depth_reggresion['value'].values)
     # df_scaled_depth_reggresion['regression'] = df_scaled_depth_reggresion['value']
     # df_reg_diff_scaled, df_error_rate_scaled = cal_error_regression(depth_name_list, df_scaled_depth_reggresion)
     # boxplot(df_reg_diff_scaled, df_error_rate_scaled)
 
-    #-_-# degree of polynomial test #-_-#
+    # -_-# degree of polynomial test #-_-#
     # poly_test = []
     # for i in range(1, 10):
     #     df_depth_regression = set_regression(bottom_depth_list, depth_name_list, i)
