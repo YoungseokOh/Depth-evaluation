@@ -18,7 +18,8 @@ class config:
     def __init__(self):
         self.file_manager = file_manager()
         self.distance = distance()
-        self.mouse_event = mouse_event()
+        self.user_interface = UserInterface()
+        # self.mouse_event = mouse_event()
         self.draw = draw()
         self.read = read()
         self.display = display()
@@ -30,6 +31,17 @@ class config:
             dtype=np.float32)
         self.ori_depth = np.zeros((self.display.image_size[1].astype(np.uint32), self.display.image_size[0].astype(np.uint32)),
             dtype=np.float32)
+        self.action_flag = ActionFlag.ACTION_NOTHING
+
+    def config_processing(self, c):
+        self.user_interface.keyboard_data.keyboard_event_processing(self, c)
+
+
+class UserInterface(config):
+    def __init__(self):
+        self.mouse_data = mouse_event()
+        self.keyboard_data = keyboard_event()
+        self.action_flag = 0
 
 
 class mouse_event(config):
@@ -39,8 +51,21 @@ class mouse_event(config):
         self.click = False
         # Rectangle coord
         self.rect_x = self.rect_y = self.rect_x1 = self.rect_y1 = None
-
         self.mouse_flag = MouseFlag.MOUSE_NOTHING
+
+
+class keyboard_event(config):
+    def __init__(self):
+        self.action_flag = 0
+
+
+    def keyboard_event_processing(self, config, c):
+        if c == 49: # '1'
+            config.action_flag = ActionFlag.ACTION_BOX_DRAW
+            print('Action Box_Draw!')
+        if c == 50: # '2'
+            config.action_flag = ActionFlag.ACTION_SPOT_DRAW
+            print('Action Spot_Draw!')
 
 
 class file_manager(config):
@@ -86,92 +111,128 @@ class read(config):
         self.read_click = read.read_click(self, config)
         self.read_up = read.read_up(self, config)
 
+
     def read_click(self, config):
-        if config.mouse_event.mouse_flag == MouseFlag.MOUSE_LBUTTONDOWN:
-            # print(config.mouse_event.click)
-            config.mouse_event.click = True
-            config.mouse_event.x1, config.mouse_event.y1 = config.mouse_event.cur_x, config.mouse_event.cur_y
-        elif config.mouse_event.x1 == None and config.mouse_event.y1 == None:
-            config.mouse_event.mouse_flag = MouseFlag.MOUSE_NOTHING
+        if config.user_interface.mouse_data.mouse_flag == MouseFlag.MOUSE_LBUTTONDOWN:
+        # if config.user_interface.mouse_data.mouse_flag == MouseFlag.MOUSE_LBUTTONDOWN:
+            # print(config.user_interface.mouse_data.click)
+            config.user_interface.mouse_data.click = True
+            config.user_interface.mouse_data.x1, config.user_interface.mouse_data.y1 = config.user_interface.mouse_data.cur_x, config.user_interface.mouse_data.cur_y
+        elif config.user_interface.mouse_data.x1 == None and config.user_interface.mouse_data.y1 == None:
+            config.user_interface.mouse_data.mouse_flag = MouseFlag.MOUSE_NOTHING
             return None
-        cv2.putText(config.draw_image, '{}(m)'.format(utils.cal_distance(config.read_depth[config.mouse_event.y1][config.mouse_event.x1],
+        cv2.putText(config.draw_image, '{}(m)'.format(utils.cal_distance(config.read_depth[config.user_interface.mouse_data.y1][config.user_interface.mouse_data.x1],
                                                                          config.file_manager.reg_coef)),
-                    (config.mouse_event.x1 + 10, config.mouse_event.y1 - 10),
+                    (config.user_interface.mouse_data.x1 + 10, config.user_interface.mouse_data.y1 - 10),
                     cv2.FONT_HERSHEY_DUPLEX,
                     0.45, (255, 255, 255))
-        # print("사각형의 왼쪽위 설정 : (" + str(config.mouse_event.x1) + ", " + str(config.mouse_event.y1) + ")")
+        # print("사각형의 왼쪽위 설정 : (" + str(config.user_interface.mouse_data.x1) + ", " + str(config.user_interface.mouse_data.y1) + ")")
 
 
     def read_up(self, config):
-        if config.mouse_event.mouse_flag == MouseFlag.MOUSE_LBUTTONUP and config.mouse_event.x1 is not None:
-            config.mouse_event.mouse_flag = MouseFlag.MOUSE_NOTHING
-            config.mouse_event.cur_x = config.mouse_event.cur_y = config.mouse_event.x1 = config.mouse_event.y1 = None
+        if config.user_interface.mouse_data.mouse_flag == MouseFlag.MOUSE_LBUTTONUP and config.user_interface.mouse_data.x1 is not None:
+            config.user_interface.mouse_data.mouse_flag = MouseFlag.MOUSE_NOTHING
+            config.user_interface.mouse_data.cur_x = config.user_interface.mouse_data.cur_y = config.user_interface.mouse_data.x1 = config.user_interface.mouse_data.y1 = None
 
 
 class draw(config):
-
     def __init__(self):
         self.ratio = 0.1
         pass
 
 
     def draw_processing(self, config):
-        self.draw_click = draw.draw_click(self, config)
-        self.draw_move = draw.draw_move(self, config)
-        self.draw_up = draw.draw_up(self, config)
+        if config.action_flag == config.action_flag.ACTION_BOX_DRAW:
+            self.draw_box_click = draw.box_draw_click(self, config)
+            self.draw_box_move = draw.box_draw_move(self, config)
+            self.draw_box_up = draw.box_draw_up(self, config)
+        if config.action_flag == config.action_flag.ACTION_SPOT_DRAW:
+            self.draw_spot_click = draw.spot_draw_click(self, config)
+            self.draw_spot_up = draw.spot_draw_up(self, config)
 
 
-    def draw_click(self, config):
-        if config.mouse_event.mouse_flag == MouseFlag.MOUSE_LBUTTONDOWN:
-            # print(config.mouse_event.click)
-            config.mouse_event.click = True
-            config.mouse_event.x1, config.mouse_event.y1 = config.mouse_event.cur_x, config.mouse_event.cur_y
-        elif config.mouse_event.x1 == None and config.mouse_event.y1 == None:
-            config.mouse_event.mouse_flag = MouseFlag.MOUSE_NOTHING
+    def spot_draw_click(self, config):
+        if config.user_interface.mouse_data.mouse_flag == MouseFlag.MOUSE_LBUTTONDOWN:
+            config.user_interface.mouse_data.click = True
+            config.user_interface.mouse_data.x1, config.user_interface.mouse_data.y1 = config.user_interface.mouse_data.cur_x, config.user_interface.mouse_data.cur_y
+            # print("사각형의 왼쪽위 설정 : (" + str(config.user_interface.mouse_data.x1) + ", " + str(
+            # config.user_interface.mouse_data.y1) + ")")
+            cv2.circle(config.draw_image,
+                       (config.user_interface.mouse_data.cur_x, config.user_interface.mouse_data.cur_y),
+                       12,
+                       (255, 0, 0),
+                          1)
+            cv2.line(config.draw_image, (0, config.user_interface.mouse_data.cur_y),
+                     (640, config.user_interface.mouse_data.cur_y), (255, 255, 255), 1)
+
+        elif config.user_interface.mouse_data.x1 == None and config.user_interface.mouse_data.y1 == None:
+            config.user_interface.mouse_data.mouse_flag = MouseFlag.MOUSE_NOTHING
             return None
-            # print("사각형의 왼쪽위 설정 : (" + str(config.mouse_event.x1) + ", " + str(config.mouse_event.y1) + ")")
 
 
-    def draw_move(self, config):
-        if config.mouse_event.click == True and config.mouse_event.mouse_flag == MouseFlag.MOUSE_MOVE:
-                cv2.rectangle(config.draw_image, (config.mouse_event.x1,config.mouse_event.y1),
-                              (config.mouse_event.cur_x,config.mouse_event.cur_y),(255,0,0),1)
-                cv2.line(config.draw_image, (0, config.mouse_event.cur_y), (640, config.mouse_event.cur_y), (255, 255, 255), 1)
-                cv2.rectangle(config.draw_depth, (config.mouse_event.x1,config.mouse_event.y1),
-                              (config.mouse_event.cur_x,config.mouse_event.cur_y),(255,0,0),1)
-                # print("(" + str(config.mouse_event.x1) + ", " + str(config.mouse_event.y1) + "), (" +
-                #       str(config.mouse_event.cur_x) + ", " + str(config.mouse_event.cur_y) + ")")
+    def spot_draw_up(self, config):
+        if config.user_interface.mouse_data.mouse_flag == MouseFlag.MOUSE_LBUTTONUP and config.user_interface.mouse_data.x1 is not None:
+            config.user_interface.mouse_data.mouse_flag = MouseFlag.MOUSE_NOTHING
+            # depth
+            depth_temp = []
+            depth_temp.append(config.ori_depth[config.user_interface.mouse_data.cur_y][config.user_interface.mouse_data.cur_x])
+            config.file_manager.depth_data.append(depth_temp)
+            config.file_manager.box_idx += 1
+            print(config.file_manager.box_idx)
 
 
-    def draw_up(self, config):
-        if config.mouse_event.mouse_flag == MouseFlag.MOUSE_LBUTTONUP and config.mouse_event.x1 is not None:
-            config.mouse_event.mouse_flag = MouseFlag.MOUSE_NOTHING
-            cv2.rectangle(config.draw_image, (config.mouse_event.x1, config.mouse_event.y1),
-                          (config.mouse_event.cur_x, config.mouse_event.cur_y), (100, 255, 0), 1)
-            cv2.rectangle(config.draw_depth, (config.mouse_event.x1, config.mouse_event.y1),
-                          (config.mouse_event.cur_x, config.mouse_event.cur_y), (255, 255, 0), 1)
+    def box_draw_click(self, config):
+        if config.user_interface.mouse_data.mouse_flag == MouseFlag.MOUSE_LBUTTONDOWN:
+        # if config.user_interface.mouse_data.mouse_flag == MouseFlag.MOUSE_LBUTTONDOWN:
+            # print(config.user_interface.mouse_data.click)
+            config.user_interface.mouse_data.click = True
+            config.user_interface.mouse_data.x1, config.user_interface.mouse_data.y1 = config.user_interface.mouse_data.cur_x, config.user_interface.mouse_data.cur_y
+        elif config.user_interface.mouse_data.x1 == None and config.user_interface.mouse_data.y1 == None:
+            config.user_interface.mouse_data.mouse_flag = MouseFlag.MOUSE_NOTHING
+            return None
+            # print("사각형의 왼쪽위 설정 : (" + str(config.user_interface.mouse_data.x1) + ", " + str(config.user_interface.mouse_data.y1) + ")")
+
+
+    def box_draw_move(self, config):
+        if config.user_interface.mouse_data.click == True and config.user_interface.mouse_data.mouse_flag == MouseFlag.MOUSE_MOVE:
+                cv2.rectangle(config.draw_image, (config.user_interface.mouse_data.x1,config.user_interface.mouse_data.y1),
+                              (config.user_interface.mouse_data.cur_x,config.user_interface.mouse_data.cur_y),(255,0,0),1)
+                cv2.line(config.draw_image, (0, config.user_interface.mouse_data.cur_y), (640, config.user_interface.mouse_data.cur_y), (255, 255, 255), 1)
+                cv2.rectangle(config.draw_depth, (config.user_interface.mouse_data.x1,config.user_interface.mouse_data.y1),
+                              (config.user_interface.mouse_data.cur_x,config.user_interface.mouse_data.cur_y),(255,0,0),1)
+                # print("(" + str(config.user_interface.mouse_data.x1) + ", " + str(config.user_interface.mouse_data.y1) + "), (" +
+                #       str(config.user_interface.mouse_data.cur_x) + ", " + str(config.user_interface.mouse_data.cur_y) + ")")
+
+
+    def box_draw_up(self, config):
+        if config.user_interface.mouse_data.mouse_flag == MouseFlag.MOUSE_LBUTTONUP and config.user_interface.mouse_data.x1 is not None:
+            config.user_interface.mouse_data.mouse_flag = MouseFlag.MOUSE_NOTHING
+            cv2.rectangle(config.draw_image, (config.user_interface.mouse_data.x1, config.user_interface.mouse_data.y1),
+                          (config.user_interface.mouse_data.cur_x, config.user_interface.mouse_data.cur_y), (100, 255, 0), 1)
+            cv2.rectangle(config.draw_depth, (config.user_interface.mouse_data.x1, config.user_interface.mouse_data.y1),
+                          (config.user_interface.mouse_data.cur_x, config.user_interface.mouse_data.cur_y), (255, 255, 0), 1)
 
             # image
-            config.file_manager.box_data[config.file_manager.box_idx][0] = config.mouse_event.cur_x
-            config.file_manager.box_data[config.file_manager.box_idx][1] = config.mouse_event.cur_y
-            config.file_manager.box_data[config.file_manager.box_idx][2] = config.mouse_event.x1
-            config.file_manager.box_data[config.file_manager.box_idx][3] = config.mouse_event.y1
+            config.file_manager.box_data[config.file_manager.box_idx][0] = config.user_interface.mouse_data.cur_x
+            config.file_manager.box_data[config.file_manager.box_idx][1] = config.user_interface.mouse_data.cur_y
+            config.file_manager.box_data[config.file_manager.box_idx][2] = config.user_interface.mouse_data.x1
+            config.file_manager.box_data[config.file_manager.box_idx][3] = config.user_interface.mouse_data.y1
             # depth
-            x_diff = config.mouse_event.cur_x - config.mouse_event.x1
-            y_diff = config.mouse_event.cur_y - config.mouse_event.y1
+            x_diff = config.user_interface.mouse_data.cur_x - config.user_interface.mouse_data.x1
+            y_diff = config.user_interface.mouse_data.cur_y - config.user_interface.mouse_data.y1
             config.file_manager.depth_len = x_diff * y_diff
             depth_temp = []
             depth_bottom_temp = []
             # rect depth extract
-            for j in range(config.mouse_event.y1, config.mouse_event.cur_y):
-                for i in range(config.mouse_event.x1, config.mouse_event.cur_x):
+            for j in range(config.user_interface.mouse_data.y1, config.user_interface.mouse_data.cur_y):
+                for i in range(config.user_interface.mouse_data.x1, config.user_interface.mouse_data.cur_x):
                     depth_temp.append(config.ori_depth[j][i])
             # bottom line depth extract
-            for line in range(config.mouse_event.x1, config.mouse_event.cur_x):
-                    depth_bottom_temp.append(config.ori_depth[config.mouse_event.cur_y][line])
+            for line in range(config.user_interface.mouse_data.x1, config.user_interface.mouse_data.cur_x):
+                    depth_bottom_temp.append(config.ori_depth[config.user_interface.mouse_data.cur_y][line])
             config.file_manager.depth_data.append(depth_temp)
             config.file_manager.bottom_line_data.append(depth_bottom_temp)
-            config.mouse_event.cur_x = config.mouse_event.cur_y = config.mouse_event.x1 = config.mouse_event.y1 = None
+            config.user_interface.mouse_data.cur_x = config.user_interface.mouse_data.cur_y = config.user_interface.mouse_data.x1 = config.user_interface.mouse_data.y1 = None
             config.file_manager.box_idx += 1
 
 

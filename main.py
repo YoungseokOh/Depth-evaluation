@@ -11,19 +11,19 @@ import pandas as pd
 data = config.config()
 
 def mouse_control(event, x, y, flags, data):
-    data.mouse_event.cur_x = x
-    data.mouse_event.cur_y = y
-    data.mouse_event.mouse_flag = MouseFlag.MOUSE_NOTHING
+    data.user_interface.mouse_data.cur_x = x
+    data.user_interface.mouse_data.cur_y = y
+    data.user_interface.mouse_data.mouse_flag = MouseFlag.MOUSE_NOTHING
     if event == cv2.EVENT_LBUTTONDOWN:
-        data.mouse_event.click = True
-        data.mouse_event.mouse_flag = MouseFlag.MOUSE_LBUTTONDOWN
+        data.user_interface.mouse_data.click = True
+        data.user_interface.mouse_data.mouse_flag = MouseFlag.MOUSE_LBUTTONDOWN
 
     if event == cv2.EVENT_MOUSEMOVE:
-        data.mouse_event.mouse_flag = MouseFlag.MOUSE_MOVE
+        data.user_interface.mouse_data.mouse_flag = MouseFlag.MOUSE_MOVE
 
     if event == cv2.EVENT_LBUTTONUP:
-        data.mouse_event.click = False
-        data.mouse_event.mouse_flag = MouseFlag.MOUSE_LBUTTONUP
+        data.user_interface.mouse_data.click = False
+        data.user_interface.mouse_data.mouse_flag = MouseFlag.MOUSE_LBUTTONUP
 
 
 def main():
@@ -64,6 +64,8 @@ def main():
             data.draw_depth = depth.copy()
             data.ori_depth = depth.copy()
             k = cv2.waitKey(1)
+            c = cv2.waitKeyEx(5)
+            c = data.config_processing(c)
             if k == 27 or data.file_manager.box_idx == len(meter_list):
                 data.file_manager.box_idx = 0  # esc를 누르면 종료
                 break
@@ -78,13 +80,17 @@ def main():
                     p_f.write(''.join(str(n)) + ' ')
                 p_f.close()
                 depth_list = data.file_manager.depth_data[count]
-                bottom_depth_list = data.file_manager.bottom_line_data[count]
+                if not data.file_manager.bottom_line_data:
+                    pass
+                else:
+                    bottom_depth_list = data.file_manager.bottom_line_data[count]
+                    df_bottom = pd.DataFrame(bottom_depth_list, columns=["depth"]).T
+                    df_bottom.to_csv(bottom_depthtxt_name, index=None, header=None)
                 # box depth save
                 df = pd.DataFrame(depth_list, columns=["depth"]).T
-                df_bottom = pd.DataFrame(bottom_depth_list, columns=["depth"]).T
                 # bottom line save
                 df.to_csv(depthtxt_name, index=None, header=None)
-                df_bottom.to_csv(bottom_depthtxt_name, index=None, header=None)
+
                 count += 1
             else:
                 break

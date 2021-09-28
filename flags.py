@@ -5,8 +5,9 @@ import numpy as np
 class ActionFlag(Enum):
 
         ACTION_NOTHING = 1,
-        ACTION_DRAW = 2,
-        ACTION_SAVE_DATA = 3,
+        ACTION_BOX_DRAW = 2,
+        ACTION_SPOT_DRAW = 3,
+        ACTION_SAVE_DATA = 4,
 
 
 class MouseFlag(Enum):
