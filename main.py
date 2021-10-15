@@ -30,9 +30,14 @@ def main():
     global data
     # select category
     #######
-    category = input("Select category [box, car, road, person] :")
+    category = input("Select category [box, car, road, person, ground] :")
+    if category == 'ground':
+        direction_ewns = input("Select direction [east, west, north, south] :")
     #######
-    data.file_manager.path_category_update(category)
+    if category == 'ground':
+        data.file_manager.path_category_update(category, direction_ewns)
+    else:
+        data.file_manager.path_category_update(category)
     gt_dist = data.distance.read_gt_distance(utils.read_folder_list(data.file_manager.img_path),
                                              data.file_manager.gt_distance_path)
     folder_names = gt_dist.keys()
@@ -57,43 +62,66 @@ def main():
         # cv2.namedWindow('image')
         while(True):
             data.draw.draw_processing(data)
-            data.display.display_processing(data)
+            if category == 'ground':
+                data.display.display_processing(data, ground=True)
+            else:
+                data.display.display_processing(data)
             cv2.imshow('image', data.draw_image)
             cv2.imshow('depth', data.draw_depth)
             data.draw_image = img.copy()
             data.draw_depth = depth.copy()
             data.ori_depth = depth.copy()
-            k = cv2.waitKey(1)
-            c = cv2.waitKeyEx(5)
+            c = cv2.waitKeyEx(1)
             c = data.config_processing(c)
+            k = cv2.waitKey(1)
             if k == 27 or data.file_manager.box_idx == len(meter_list):
+                print(k)
                 data.file_manager.box_idx = 0  # esc를 누르면 종료
                 break
         count = 0
-        for meter in meter_list:
-            savetxt_name = exp_path + os.path.join('/', meter) + '.txt'
-            depthtxt_name = exp_path + os.path.join('/', meter) + '_depth.txt'
-            bottom_depthtxt_name = exp_path + os.path.join('/', meter) + '_bottom_depth.txt'
-            if not os.path.isfile(savetxt_name) or os.path.isfile(depthtxt_name):
-                p_f = open(savetxt_name, 'w')
-                for n in data.file_manager.box_data[count]:
-                    p_f.write(''.join(str(n)) + ' ')
-                p_f.close()
-                depth_list = data.file_manager.depth_data[count]
-                if not data.file_manager.bottom_line_data:
-                    pass
+        if category == 'ground':
+            savetxt_name = exp_path + os.path.join('/', folder) + '.txt'
+            depthtxt_name = exp_path + os.path.join('/', folder) + '_depth.txt'
+            p_f = open(savetxt_name, 'w')
+            for i in data.file_manager.box_data:
+                for n in i:
+                    if n == 0:
+                        pass
+                    else:
+                        p_f.write(''.join(str(n)) + ' ')
+                p_f.write(''.join('\n'))
+            p_f.close()
+            depth_list = data.file_manager.depth_data
+            df = pd.DataFrame(depth_list, columns=["depth"]).T
+            # bottom line save
+            df.to_csv(depthtxt_name, index=None, header=None)
+            count += 1
+        else:
+            for meter in meter_list:
+                if k == 27:
+                    break
+                savetxt_name = exp_path + os.path.join('/', meter) + '.txt'
+                depthtxt_name = exp_path + os.path.join('/', meter) + '_depth.txt'
+                bottom_depthtxt_name = exp_path + os.path.join('/', meter) + '_bottom_depth.txt'
+                if not os.path.isfile(savetxt_name) or os.path.isfile(depthtxt_name):
+                    p_f = open(savetxt_name, 'w')
+                    for n in data.file_manager.box_data[count]:
+                        p_f.write(''.join(str(n)) + ' ')
+                    p_f.close()
+                    depth_list = data.file_manager.depth_data[count]
+                    if not data.file_manager.bottom_line_data:
+                        pass
+                    else:
+                        bottom_depth_list = data.file_manager.bottom_line_data[count]
+                        df_bottom = pd.DataFrame(bottom_depth_list, columns=["depth"]).T
+                        df_bottom.to_csv(bottom_depthtxt_name, index=None, header=None)
+                    # box depth save
+                    df = pd.DataFrame(depth_list, columns=["depth"]).T
+                    # bottom line save
+                    df.to_csv(depthtxt_name, index=None, header=None)
+                    count += 1
                 else:
-                    bottom_depth_list = data.file_manager.bottom_line_data[count]
-                    df_bottom = pd.DataFrame(bottom_depth_list, columns=["depth"]).T
-                    df_bottom.to_csv(bottom_depthtxt_name, index=None, header=None)
-                # box depth save
-                df = pd.DataFrame(depth_list, columns=["depth"]).T
-                # bottom line save
-                df.to_csv(depthtxt_name, index=None, header=None)
-
-                count += 1
-            else:
-                break
+                    break
         data.file_manager.depth_data = []
         data.file_manager.bottom_line_data = []
         # print('done')

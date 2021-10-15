@@ -90,16 +90,20 @@ class file_manager(config):
         self.box_idx = 0
         self.reg_coef = 0
         self.scale_num = 80
-        self.degree_num = 3
-        self.box_data = np.zeros((6,4), dtype = np.int32)# frame 넘길 때마다 박스데이터 초기화
+        self.degree_num = 1
+        self.box_data = np.zeros((9,4), dtype = np.int32)# frame 넘길 때마다 박스데이터 초기화
         self.depth_data = [] # frame 넘길 때마다 박스데이터 초기화
         self.bottom_line_data = []
 
-    def path_category_update(self, category):
+    def path_category_update(self, category, ground=None):
         self.img_path = utils.paste_path(self.img_path, category)
         self.depth_path = utils.paste_path(self.depth_path, category)
         self.save_path = utils.paste_path(self.save_path, category)
         self.gt_distance_path = os.path.join('/', self.ori_path, utils.search_txt_file(self.ori_path, category))
+        if ground:
+            self.img_path = utils.paste_path(self.img_path, ground)
+            self.depth_path = utils.paste_path(self.depth_path, ground)
+            self.save_path = utils.paste_path(self.save_path, ground)
 
 
 class read(config):
@@ -177,6 +181,8 @@ class draw(config):
             depth_temp = []
             depth_temp.append(config.ori_depth[config.user_interface.mouse_data.cur_y][config.user_interface.mouse_data.cur_x])
             config.file_manager.depth_data.append(depth_temp)
+            config.file_manager.box_data[config.file_manager.box_idx][0] = config.user_interface.mouse_data.cur_x
+            config.file_manager.box_data[config.file_manager.box_idx][1] = config.user_interface.mouse_data.cur_y
             config.file_manager.box_idx += 1
             print(config.file_manager.box_idx)
 
@@ -251,8 +257,11 @@ class display(config):
         self.circle_size = 3
 
 
-    def display_processing(self, config):
-        self.box_display = display.box_display(self, config)
+    def display_processing(self, config, ground=None):
+        if ground:
+            self.spot_display = display.spot_display(self, config)
+        else:
+            self.box_display = display.box_display(self, config)
 
 
     def box_display(self, config):
@@ -266,3 +275,15 @@ class display(config):
                 cv2.rectangle(config.draw_depth, (x1, y1), (cur_x, cur_y), (100, 0, 255), 1)
                 cv2.line(config.draw_image, (x1, cur_y), (cur_x, cur_y), (255, 255, 255), 1)
                 # cv2.line(config.draw_depth, (x1, cur_y), (cur_x, cur_y), (100, 255, 255), 1)
+
+    def spot_display(self, config):
+
+        if config.file_manager.box_idx >= 0:
+            for x in range(0, config.file_manager.box_idx):
+                cur_x = config.file_manager.box_data[x][0].copy()
+                cur_y = config.file_manager.box_data[x][1].copy()
+                cv2.circle(config.draw_image,
+                           (cur_x, cur_y),
+                           4,
+                           (255, 0, 0),
+                              1)

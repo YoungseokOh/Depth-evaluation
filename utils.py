@@ -208,3 +208,17 @@ def load_depth_list(path, gt_dist, folder_name_list, scale_num=30):
     depth_name_list = list(map(int, depth_name_list))
     # df_depth_diff = pd.DataFrame(depth_diff, depth_name_list)
     return depth_list, bottom_depth_list, depth_name_list, depth_diff, box_coord
+
+
+def save_depth_list(data, meter_list, exp_path, depth_data, ground=None):
+    return 0
+    # if ground:
+    #     savetxt_name = exp_path + os.path.join('/', meter_list[0]) + '.txt'
+    #     depthtxt_name = exp_path + os.path.join('/', meter_list[0]) + '_depth.txt'
+    #     bottom_depthtxt_name = exp_path + os.path.join('/', meter_list[0]) + '_bottom_depth.txt'
+    #     if not os.path.isfile(savetxt_name) or os.path.isfile(depthtxt_name):
+    #         p_f = open(savetxt_name, 'w')
+    #         for n in data.file_manager.box_data[count]:
+    #             p_f.write(''.join(str(n)) + ' ')
+    #         p_f.close()
+    #         depth_list = data.file_manager.depth_data
