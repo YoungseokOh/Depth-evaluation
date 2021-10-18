@@ -167,47 +167,87 @@ def box_coord_to_list(box_str_list):
     return coord_temp_list
 
 
-def load_depth_list(path, gt_dist, folder_name_list, scale_num=30):
+def split_str_in_list(depth_box_coord):
+    coord_list = []
+    for i in range(0, len(depth_box_coord)):
+        print(depth_box_coord[i])
+        coord_list.append(tuple(depth_box_coord[i].split(' ')[:-1]))
+    return coord_list
+
+
+def coord_to_depth(path, coord):
+    depth = cv2.imread(path, cv2.CV_16U)
+    depth_list = []
+    for i in coord:
+        depth_list_temp = []
+        for num in range(0, len(i)):
+            depth_list_temp.append(depth[int(i[num][1])][int(i[num][0])])
+        depth_list.append(depth_list_temp)
+    return depth_list
+
+
+def load_depth_list(path, gt_dist, folder_name_list, scale_num=30, ground=None):
     depth_list = []
     bottom_depth_list = []
     depth_diff = []
     depth_name_list = []
     box_coord = []
-    for folder in folder_name_list:
-        exp_path = path + os.path.join('/', folder)
-        if check_folder(exp_path):
-            meter_list = gt_dist[folder].split(" ")
-        for meter in meter_list:
+    if ground:
+        for folder in folder_name_list:
+            exp_path = path + os.path.join('/', folder)
+            print(folder)
             # txt
-            depthtxt_name = exp_path + os.path.join('/', meter) + '_depth.txt'
-            bottom_depthtxt_name = exp_path + os.path.join('/', meter) + '_bottom_depth.txt'
-            depth_box_coord = exp_path + os.path.join('/', meter) + '.txt'
+            depthtxt_name = exp_path + os.path.join('/', folder) + '_depth.txt'
+            depth_box_coord = exp_path + os.path.join('/', folder) + '.txt'
             # read_csv
             depth_temp = pd.read_csv(depthtxt_name, delimiter=',').T
-            bottom_depth_temp = pd.read_csv(bottom_depthtxt_name, delimiter=',').T
-            depth_box_coord_temp = pd.read_csv(depth_box_coord, delimiter=',').T
+            depth_box_coord_temp = pd.read_csv(depth_box_coord, delimiter=',', header=None)
             # list map
             depth_temp = list(map(float, depth_temp.index.values))
-            bottom_depth_temp = list(map(float, bottom_depth_temp.index.values))
-            depth_box_coord_temp = list(map(str, depth_box_coord_temp.index.values))
-            depth_box_coord_temp = box_coord_to_list(depth_box_coord_temp)
-            coord_temp = []
-            for y in range(depth_box_coord_temp[3], depth_box_coord_temp[1]):
-                for x in range(depth_box_coord_temp[2], depth_box_coord_temp[0]):
-                    coord_temp.append((y, x))
+            depth_box_coord_temp = list(map(str, depth_box_coord_temp[0]))
+            depth_box_coord_temp = split_str_in_list(depth_box_coord_temp)
             # append
             depth_list.append(depth_temp)
-            box_coord.append(coord_temp)
-            bottom_depth_list.append(bottom_depth_temp)
-            depth_diff_temp = []
-            for depth in depth_temp:
-                diff_temp = abs((int(depth) / scale_num) - float(meter))
-                depth_diff_temp.append(diff_temp)
-            depth_diff.append(depth_diff_temp)
-            depth_name_list.append(meter)
-    depth_name_list = list(map(int, depth_name_list))
-    # df_depth_diff = pd.DataFrame(depth_diff, depth_name_list)
-    return depth_list, bottom_depth_list, depth_name_list, depth_diff, box_coord
+            box_coord.append(depth_box_coord_temp)
+        depth_name_list = list(map(int, folder_name_list))
+        # df_depth_diff = pd.DataFrame(depth_diff, depth_name_list)
+        return depth_list, bottom_depth_list, depth_name_list, depth_diff, box_coord
+    elif not ground:
+        for folder in folder_name_list:
+            exp_path = path + os.path.join('/', folder)
+            if check_folder(exp_path):
+                meter_list = gt_dist[folder].split(" ")
+            for meter in meter_list:
+                # txt
+                depthtxt_name = exp_path + os.path.join('/', meter) + '_depth.txt'
+                bottom_depthtxt_name = exp_path + os.path.join('/', meter) + '_bottom_depth.txt'
+                depth_box_coord = exp_path + os.path.join('/', meter) + '.txt'
+                # read_csv
+                depth_temp = pd.read_csv(depthtxt_name, delimiter=',').T
+                bottom_depth_temp = pd.read_csv(bottom_depthtxt_name, delimiter=',').T
+                depth_box_coord_temp = pd.read_csv(depth_box_coord, delimiter=',').T
+                # list map
+                depth_temp = list(map(float, depth_temp.index.values))
+                bottom_depth_temp = list(map(float, bottom_depth_temp.index.values))
+                depth_box_coord_temp = list(map(str, depth_box_coord_temp.index.values))
+                depth_box_coord_temp = box_coord_to_list(depth_box_coord_temp)
+                coord_temp = []
+                for y in range(depth_box_coord_temp[3], depth_box_coord_temp[1]):
+                    for x in range(depth_box_coord_temp[2], depth_box_coord_temp[0]):
+                        coord_temp.append((y, x))
+                # append
+                depth_list.append(depth_temp)
+                box_coord.append(coord_temp)
+                bottom_depth_list.append(bottom_depth_temp)
+                depth_diff_temp = []
+                for depth in depth_temp:
+                    diff_temp = abs((int(depth) / scale_num) - float(meter))
+                    depth_diff_temp.append(diff_temp)
+                depth_diff.append(depth_diff_temp)
+                depth_name_list.append(meter)
+        depth_name_list = list(map(int, depth_name_list))
+        # df_depth_diff = pd.DataFrame(depth_diff, depth_name_list)
+        return depth_list, bottom_depth_list, depth_name_list, depth_diff, box_coord
 
 
 def save_depth_list(data, meter_list, exp_path, depth_data, ground=None):

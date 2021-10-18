@@ -95,6 +95,7 @@ class file_manager(config):
         self.depth_data = [] # frame 넘길 때마다 박스데이터 초기화
         self.bottom_line_data = []
 
+
     def path_category_update(self, category, ground=None):
         self.img_path = utils.paste_path(self.img_path, category)
         self.depth_path = utils.paste_path(self.depth_path, category)
@@ -168,7 +169,6 @@ class draw(config):
                           1)
             cv2.line(config.draw_image, (0, config.user_interface.mouse_data.cur_y),
                      (640, config.user_interface.mouse_data.cur_y), (255, 255, 255), 1)
-
         elif config.user_interface.mouse_data.x1 == None and config.user_interface.mouse_data.y1 == None:
             config.user_interface.mouse_data.mouse_flag = MouseFlag.MOUSE_NOTHING
             return None
@@ -184,7 +184,7 @@ class draw(config):
             config.file_manager.box_data[config.file_manager.box_idx][0] = config.user_interface.mouse_data.cur_x
             config.file_manager.box_data[config.file_manager.box_idx][1] = config.user_interface.mouse_data.cur_y
             config.file_manager.box_idx += 1
-            print(config.file_manager.box_idx)
+            print('num count : {}'.format(config.file_manager.box_idx))
 
 
     def box_draw_click(self, config):
@@ -276,8 +276,10 @@ class display(config):
                 cv2.line(config.draw_image, (x1, cur_y), (cur_x, cur_y), (255, 255, 255), 1)
                 # cv2.line(config.draw_depth, (x1, cur_y), (cur_x, cur_y), (100, 255, 255), 1)
 
-    def spot_display(self, config):
 
+    def spot_display(self, config):
+        cv2.line(config.draw_image, (0, config.user_interface.mouse_data.cur_y),
+                 (640, config.user_interface.mouse_data.cur_y), (255, 255, 255), 1)
         if config.file_manager.box_idx >= 0:
             for x in range(0, config.file_manager.box_idx):
                 cur_x = config.file_manager.box_data[x][0].copy()
@@ -285,5 +287,5 @@ class display(config):
                 cv2.circle(config.draw_image,
                            (cur_x, cur_y),
                            4,
-                           (255, 0, 0),
+                           (0, 0, 255),
                               1)

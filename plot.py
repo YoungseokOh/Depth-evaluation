@@ -11,7 +11,6 @@ from sklearn.linear_model import RANSACRegressor
 
 data = config.config()
 
-
 def cal_error_regression(depth_name_list, df_regression):
     reg_depth_error, reg_depth_error_rate, reg_depth_error_rate_avg, reg_depth = utils.melt_to_col(depth_name_list,
                                                                                                    df_regression)
@@ -51,13 +50,19 @@ def boxplot(df_diff, df_rate):
 def main():
     # select category
     #######
-    # category = input("Select category [box, car, road, person] :")
-    category = 'road'
+    category = input("Select category [box, car, road, person, ground] :")
+    if category == 'ground':
+        direction_ewns = input("Select direction [east, west, north, south] :")
     #######
-    if not utils.check_exist(data.file_manager.regression_data + os.path.join('/', category)):
-        utils.make_folder(data.file_manager.regression_data + os.path.join('/', category))
-    data.file_manager.path_category_update(category)
-
+    if category == 'ground':
+        data.file_manager.path_category_update(category, direction_ewns)
+        if not utils.check_exist(data.file_manager.regression_data + os.path.join('/', category)):
+            utils.make_folder(data.file_manager.regression_data + os.path.join('/', category))
+    else:
+        data.file_manager.path_category_update(category)
+        if not utils.check_exist(data.file_manager.regression_data + os.path.join('/', category)):
+            utils.make_folder(data.file_manager.regression_data + os.path.join('/', category))
+    #######
     gt_dist = data.distance.read_gt_distance(utils.read_folder_list(data.file_manager.img_path),
                                              data.file_manager.gt_distance_path)
     folder_names = gt_dist.keys()
@@ -66,7 +71,13 @@ def main():
     depth_list, bottom_depth_list, depth_name_list, depth_diff, box_coord = utils.load_depth_list(
         data.file_manager.save_path,
         gt_dist, folder_names,
-        scale)
+        scale,
+        ground=True)
+    folder_names_list = list(folder_names)
+    selected_dist = folder_names_list[-1]
+    data.file_manager.depth_file = utils.rand_img(data.file_manager.depth_path + os.path.join('/', selected_dist))
+    selected_dist_path = data.file_manager.depth_path + os.path.join('/', selected_dist, data.file_manager.depth_file)
+    selected_depth_list = utils.coord_to_depth(selected_dist_path, box_coord)
 
     # -_-# original #-_-#
     df_depth_regression = set_regression(depth_list, depth_name_list, degree=degree)
@@ -89,14 +100,14 @@ def main():
     boxplot(df_reg_diff_mode, df_error_rate_mode)
 
     # -_-# bottom_line #-_-#
-    df_depth_bottom_list = utils.df_option_to_list(utils.create_dataframe(bottom_depth_list, depth_name_list))
-    df_depth_bottom_regression = set_regression(bottom_depth_list, depth_name_list)
-    df_reg_diff_mode, df_error_rate_mode = cal_error_regression(depth_name_list, df_depth_bottom_regression)
-    plt.scatter(df_depth_bottom_regression['variable'].values, df_depth_bottom_regression['value'].values)
-    df_depth_bottom_regression.to_csv(
-        data.file_manager.regression_data + os.path.join('/', category) +
-        os.path.join('/', 'regression_bottom_line_{}.csv'.format(degree)))
-    boxplot(df_reg_diff_mode, df_error_rate_mode)
+    # df_depth_bottom_list = utils.df_option_to_list(utils.create_dataframe(bottom_depth_list, depth_name_list))
+    # df_depth_bottom_regression = set_regression(bottom_depth_list, depth_name_list)
+    # df_reg_diff_mode, df_error_rate_mode = cal_error_regression(depth_name_list, df_depth_bottom_regression)
+    # plt.scatter(df_depth_bottom_regression['variable'].values, df_depth_bottom_regression['value'].values)
+    # df_depth_bottom_regression.to_csv(
+    #     data.file_manager.regression_data + os.path.join('/', category) +
+    #     os.path.join('/', 'regression_bottom_line_{}.csv'.format(degree)))
+    # boxplot(df_reg_diff_mode, df_error_rate_mode)
 
     # -_-# option plot #-_-#
     df_depth_mode_list = utils.df_option_to_list(utils.create_dataframe(bottom_depth_list, depth_name_list))

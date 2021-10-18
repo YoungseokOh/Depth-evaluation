@@ -75,7 +75,6 @@ def main():
             c = data.config_processing(c)
             k = cv2.waitKey(1)
             if k == 27 or data.file_manager.box_idx == len(meter_list):
-                print(k)
                 data.file_manager.box_idx = 0  # esc를 누르면 종료
                 break
         count = 0
@@ -124,10 +123,8 @@ def main():
                     break
         data.file_manager.depth_data = []
         data.file_manager.bottom_line_data = []
-        # print('done')
 
 
 if __name__ == "__main__":
     main()
-
     print('done')
