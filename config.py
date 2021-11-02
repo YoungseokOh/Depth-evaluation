@@ -258,7 +258,7 @@ class display(config):
 
 
     def display_processing(self, config, ground=None):
-        if ground:
+        if config.action_flag == config.action_flag.ACTION_SPOT_DRAW:
             self.spot_display = display.spot_display(self, config)
         else:
             self.box_display = display.box_display(self, config)

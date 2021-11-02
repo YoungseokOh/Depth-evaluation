@@ -30,7 +30,7 @@ def main():
     global data
     # select category
     #######
-    category = input("Select category [box, car, road, person, ground] :")
+    category = input("Select category [box, car, road, person, ground, test] :")
     if category == 'ground':
         direction_ewns = input("Select direction [east, west, north, south] :")
     #######

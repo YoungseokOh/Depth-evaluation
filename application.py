@@ -11,26 +11,26 @@ import pandas as pd
 data = config.config()
 
 def mouse_control(event, x, y, flags, data):
-    data.mouse_event.cur_x = x
-    data.mouse_event.cur_y = y
-    data.mouse_event.mouse_flag = MouseFlag.MOUSE_NOTHING
+    data.user_interface.mouse_data.cur_x = x
+    data.user_interface.mouse_data.cur_y = y
+    data.user_interface.mouse_data.mouse_flag = MouseFlag.MOUSE_NOTHING
     if event == cv2.EVENT_LBUTTONDOWN:
-        data.mouse_event.click = True
-        data.mouse_event.mouse_flag = MouseFlag.MOUSE_LBUTTONDOWN
+        data.user_interface.mouse_data.click = True
+        data.user_interface.mouse_data.mouse_flag = MouseFlag.MOUSE_LBUTTONDOWN
 
     if event == cv2.EVENT_MOUSEMOVE:
-        data.mouse_event.mouse_flag = MouseFlag.MOUSE_MOVE
+        data.user_interface.mouse_data.mouse_flag = MouseFlag.MOUSE_MOVE
 
     if event == cv2.EVENT_LBUTTONUP:
-        data.mouse_event.click = False
-        data.mouse_event.mouse_flag = MouseFlag.MOUSE_LBUTTONUP
+        data.user_interface.mouse_data.click = False
+        data.user_interface.mouse_data.mouse_flag = MouseFlag.MOUSE_LBUTTONUP
 
 
 def main():
     global data
     # select category
     #######
-    category = 'road'
+    category = 'test'
     #######
     data.file_manager.path_category_update(category)
     gt_dist = data.distance.read_gt_distance(utils.read_folder_list(data.file_manager.img_path),
